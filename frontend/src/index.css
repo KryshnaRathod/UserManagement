@@ -1,0 +1,175 @@
+@import "tailwindcss";
+@media (max-width: 991.98px) {
+  .main-content {
+    margin-left: 0 !important;
+  }
+}
+
+@media (min-width: 992px) {
+  .main-content {
+    margin-left: 260px;
+  }
+}
+
+/* =========================
+   PROFILE DROPDOWN (Header)
+========================= */
+.profile-dropdown-menu {
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  border-radius: 0.75rem;
+  min-width: 220px;
+  padding: 0.5rem;
+}
+
+.profile-dropdown-menu .dropdown-item {
+  border-radius: 0.5rem;
+  padding: 0.55rem 0.75rem;
+  font-size: 0.9rem;
+}
+
+.profile-dropdown-menu .dropdown-item:hover {
+  background-color: #f1f5f9;
+}
+
+.profile-dropdown-menu .dropdown-item:active {
+  background-color: #0d6efd;
+}
+
+.profile-dropdown-menu .dropdown-divider {
+  margin: 0.4rem 0;
+}
+
+/* =========================
+   AUTH MODAL (Popup)
+========================= */
+.auth-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.6);
+  backdrop-filter: blur(3px);
+  z-index: 1055;
+  animation: authFadeIn 0.2s ease;
+}
+
+.auth-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 1056;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+}
+
+.auth-modal-card {
+  background: #fff;
+  border-radius: 1rem;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.25);
+  width: 100%;
+  max-width: 420px;
+  max-height: 90vh;
+  overflow-y: auto;
+  animation: authZoomIn 0.25s ease;
+}
+
+.auth-modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1.25rem 1.5rem 0.75rem;
+}
+
+.auth-modal-header h5 {
+  color: #0f172a;
+  font-size: 1.1rem;
+}
+
+.auth-tabs {
+  display: flex;
+  gap: 0.5rem;
+  padding: 0 1.5rem 1rem;
+  border-bottom: 1px solid #e9ecef;
+}
+
+.auth-tab {
+  flex: 1;
+  border: none;
+  background: transparent;
+  padding: 0.6rem 0.75rem;
+  border-radius: 0.6rem;
+  font-weight: 600;
+  font-size: 0.9rem;
+  color: #64748b;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.auth-tab:hover {
+  background: #f1f5f9;
+  color: #0f172a;
+}
+
+.auth-tab.active {
+  background: #0d6efd;
+  color: #fff;
+}
+
+.auth-modal-body {
+  padding: 1.5rem;
+}
+
+.auth-input-group {
+  position: relative;
+}
+
+.auth-input-icon {
+  position: absolute;
+  top: 50%;
+  left: 0.85rem;
+  transform: translateY(-50%);
+  color: #9ca3af;
+  font-size: 1rem;
+  pointer-events: none;
+}
+
+.auth-input {
+  padding-left: 2.5rem;
+  border-radius: 0.6rem;
+  padding-top: 0.6rem;
+  padding-bottom: 0.6rem;
+  border: 1px solid #d1d5db;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.auth-input:focus {
+  border-color: #0d6efd;
+  box-shadow: 0 0 0 3px rgba(13, 110, 253, 0.15);
+}
+
+.auth-submit-btn {
+  border-radius: 0.6rem;
+  padding: 0.7rem;
+  font-weight: 600;
+}
+
+.auth-link {
+  font-weight: 600;
+  vertical-align: baseline;
+  cursor: pointer;
+}
+
+@keyframes authFadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes authZoomIn {
+  from {
+    opacity: 0;
+    transform: scale(0.95) translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
