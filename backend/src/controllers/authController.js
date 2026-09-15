@@ -94,12 +94,6 @@ exports.signup = async (req, res) => {
 // =====================================================
 
 exports.logout = async (req, res) => {
-  res.clearCookie("token", {
-    httpOnly: true,
-    secure: false,
-    sameSite: "lax",
-  });
-
   res.status(200).json({
     success: true,
     message: "Logged out successfully",
@@ -172,23 +166,13 @@ exports.login = async (req, res) => {
     );
 
     // -----------------------------
-    // Set token as HTTP-only cookie
-    // -----------------------------
-
-    res.cookie("token", token, {
-      httpOnly: true,
-      secure: false,
-      sameSite: "lax",
-      maxAge: 5 * 60 * 1000,
-    });
-
-    // -----------------------------
     // Response
     // -----------------------------
 
     res.status(200).json({
       success: true,
       message: "Login successful",
+      token,
       data: {
         id: user._id,
         name: user.name,

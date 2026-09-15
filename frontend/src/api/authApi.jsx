@@ -4,7 +4,6 @@ const API_URL = "/api/auth";
 export const loginUser = async (email, password) => {
   const response = await fetch(`${API_URL}/login`, {
     method: "POST",
-    credentials: "include",
     headers: {
       "Content-Type": "application/json",
     },
@@ -22,6 +21,10 @@ export const loginUser = async (email, password) => {
 
   localStorage.setItem("user", JSON.stringify(data.data));
 
+  if (data.token) {
+    localStorage.setItem("token", data.token);
+  }
+
   return data;
 };
 
@@ -33,7 +36,6 @@ export const signupUser = async (
 ) => {
   const response = await fetch(`${API_URL}/signup`, {
     method: "POST",
-    credentials: "include",
     headers: {
       "Content-Type": "application/json",
     },
@@ -55,12 +57,8 @@ export const signupUser = async (
 
 // ================= LOGOUT =================
 export const logoutUser = async () => {
-  await fetch(`${API_URL}/logout`, {
-    method: "POST",
-    credentials: "include",
-  });
-
   localStorage.removeItem("user");
+  localStorage.removeItem("token");
 };
 
 // ================= GET USER =================
@@ -76,14 +74,16 @@ export const isAuthenticated = () => {
 
 // ================= AUTH FETCH WRAPPER =================
 export const authFetch = async (url, options = {}) => {
+  const token = localStorage.getItem("token");
+
   const headers = {
     "Content-Type": "application/json",
+    ...(token ? { Authorization: `Bearer ${token}` } : {}),
     ...options.headers,
   };
 
   const response = await fetch(url, {
     ...options,
-    credentials: "include",
     headers,
   });
 
