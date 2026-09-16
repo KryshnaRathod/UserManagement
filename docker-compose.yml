@@ -16,11 +16,11 @@ services:
       JWT_SECRET: ${JWT_SECRET:-my_super_secret_jwt_key_2026}
 
       # PostgreSQL
-      PG_HOST: postgres
-      PG_PORT: 5432
-      PG_DATABASE: mydb
-      PG_USER: postgres
-      PG_PASSWORD: krishna
+      # PG_HOST: postgres
+      # PG_PORT: 5432
+      # PG_DATABASE: mydb
+      # PG_USER: postgres
+      # PG_PASSWORD: krishna
 
     depends_on:
       - mongo
