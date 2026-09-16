@@ -1,0 +1,7 @@
+# local config / secrets
+backend/.env
+**/.env
+
+# dependencies
+node_modules/
+**/node_modules/
