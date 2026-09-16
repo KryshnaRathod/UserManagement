@@ -1,6 +1,7 @@
 import { authFetch } from "./authApi";
+import { API_BASE_URL } from "./config";
 
-const API_URL = "/api/students";
+const API_URL = `${API_BASE_URL}/api/students`;
 
 // ================= GET STUDENTS =================
 export const getStudents = async ({
