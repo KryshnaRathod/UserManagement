@@ -3,7 +3,7 @@ require('dotenv').config();
 const app = require('./src/app');
 
 const connectMongoDB = require('./src/config/mongoDB');
-const { connectPostgres } = require('./src/config/postgresDB');
+// const { connectPostgres } = require('./src/config/postgresDB');
 
 const PORT = process.env.PORT || 5000;
 
@@ -13,7 +13,7 @@ const startServer = async () => {
     await connectMongoDB();
 
     // Connect PostgreSQL
-    await connectPostgres();
+    // await connectPostgres();
 
     // Start Server
     app.listen(PORT, () => {
