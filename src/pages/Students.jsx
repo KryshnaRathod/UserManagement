@@ -3,7 +3,13 @@ import { useEffect, useState } from "react";
 import {
   getStudents,
   searchStudents,
+  getFirstNames,
+  createStudent,
+  updateStudent,
+  deleteStudent,
 } from "../api/studentApi";
+
+import StudentFormModal from "../components/StudentFormModal";
 
 function Students() {
   // =================================================
@@ -17,6 +23,14 @@ function Students() {
   const [error, setError] = useState("");
 
   const [search, setSearch] = useState("");
+
+  // Search term that is actually applied to the API
+  const [appliedSearch, setAppliedSearch] = useState("");
+
+  // First-name suggestions dropdown
+  const [suggestions, setSuggestions] = useState([]);
+
+  const [searchFocused, setSearchFocused] = useState(false);
 
   const [gender, setGender] = useState("");
 
@@ -32,6 +46,27 @@ function Students() {
   // Total pages from backend
   const [totalPages, setTotalPages] = useState(0);
 
+  // Add student modal
+  const [addModalOpen, setAddModalOpen] = useState(false);
+
+  const [addSaving, setAddSaving] = useState(false);
+
+  const [addError, setAddError] = useState("");
+
+  // Edit student modal
+  const [editStudent, setEditStudent] = useState(null);
+
+  const [editSaving, setEditSaving] = useState(false);
+
+  const [editError, setEditError] = useState("");
+
+  // Delete confirmation modal
+  const [deleteTarget, setDeleteTarget] = useState(null);
+
+  const [deleteSaving, setDeleteSaving] = useState(false);
+
+  const [deleteError, setDeleteError] = useState("");
+
 
   // =================================================
   // FETCH STUDENTS
@@ -42,11 +77,18 @@ function Students() {
       setLoading(true);
       setError("");
 
-      const result = await getStudents({
-        page,
-        limit,
-        gender,
-      });
+      const result = appliedSearch
+        ? await searchStudents({
+            search: appliedSearch,
+            page,
+            limit,
+            gender,
+          })
+        : await getStudents({
+            page,
+            limit,
+            gender,
+          });
 
       console.log("Students API response:", result);
 
@@ -81,60 +123,99 @@ function Students() {
 
 
   // =================================================
-  // FETCH WHEN PAGE / GENDER CHANGES
+  // FETCH WHEN PAGE / GENDER / SEARCH CHANGES
   // =================================================
 
   useEffect(() => {
     fetchStudents();
-  }, [page, gender]);
+  }, [page, gender, appliedSearch]);
+
+
+  // =================================================
+  // LIVE SEARCH (as you type)
+  // =================================================
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      // Search always starts from page 1
+      setPage(1);
+      setAppliedSearch(search.trim());
+    }, 300);
+
+    return () => clearTimeout(timer);
+  }, [search]);
+
+
+  // =================================================
+  // FIRST NAME SUGGESTIONS
+  // =================================================
+
+  useEffect(() => {
+    const q = search.trim();
+
+    if (!q) {
+      setSuggestions([]);
+      return;
+    }
+
+    let active = true;
+
+    const timer = setTimeout(async () => {
+      try {
+        const result = await getFirstNames(q);
+
+        if (active) {
+          setSuggestions(result.data || []);
+        }
+      } catch (error) {
+        console.error("Suggestions error:", error);
+
+        if (active) {
+          setSuggestions([]);
+        }
+      }
+    }, 250);
+
+    return () => {
+      active = false;
+      clearTimeout(timer);
+    };
+  }, [search]);
 
 
   // =================================================
   // SEARCH
   // =================================================
 
-  const handleSearch = async (e) => {
+  const handleSearch = (e) => {
     e.preventDefault();
 
-    try {
-      setLoading(true);
-      setError("");
+    // Search always starts from page 1
+    setPage(1);
 
-      // Search always starts from page 1
-      setPage(1);
+    // Applying this triggers the effect above
+    setAppliedSearch(search.trim());
+    setSearchFocused(false);
+  };
 
-      const result = await searchStudents({
-        search: search.trim(),
-        page: 1,
-        limit,
-        gender,
-      });
+  const handleClearSearch = () => {
+    setSearch("");
+    setAppliedSearch("");
+    setSuggestions([]);
+    setPage(1);
+  };
 
-      console.log("Search API response:", result);
+  const handleSuggestionClick = (name) => {
+    setSearch(name);
+    setAppliedSearch(name);
+    setSuggestions([]);
+    setSearchFocused(false);
+    setPage(1);
+  };
 
-      setStudents(result.data || []);
-
-      setTotal(
-        result.pagination?.totalRecords || 0
-      );
-
-      setTotalPages(
-        result.pagination?.totalPages || 0
-      );
-
-    } catch (error) {
-      console.error("Search error:", error);
-
-      setError(
-        error.message || "Search failed"
-      );
-
-      setStudents([]);
-      setTotal(0);
-      setTotalPages(0);
-
-    } finally {
-      setLoading(false);
+  const handleSearchKeyDown = (e) => {
+    if (e.key === "Escape") {
+      setSearchFocused(false);
     }
   };
 
@@ -173,6 +254,119 @@ function Students() {
       top: 0,
       behavior: "smooth",
     });
+  };
+
+
+  // =================================================
+  // ADD STUDENT MODAL
+  // =================================================
+
+  const openAddModal = () => {
+    setAddError("");
+    setAddModalOpen(true);
+  };
+
+  const closeAddModal = () => {
+    if (!addSaving) {
+      setAddModalOpen(false);
+    }
+  };
+
+  const handleAddSubmit = async (form) => {
+    setAddError("");
+    setAddSaving(true);
+
+    try {
+      await createStudent(form);
+
+      setAddModalOpen(false);
+
+      // Show all students (including the newly added one)
+      setSearch("");
+      setAppliedSearch("");
+      setSuggestions([]);
+      setPage(1);
+
+      // Nothing above changed the fetch inputs, so force a refresh
+      if (page === 1 && !appliedSearch && !search) {
+        await fetchStudents();
+      }
+    } catch (error) {
+      setAddError(
+        error.message || "Failed to add student"
+      );
+    } finally {
+      setAddSaving(false);
+    }
+  };
+
+
+  // =================================================
+  // EDIT / DELETE
+  // =================================================
+
+  const openEditModal = (student) => {
+    setEditError("");
+    setEditStudent(student);
+  };
+
+  const closeEditModal = () => {
+    if (!editSaving) {
+      setEditStudent(null);
+    }
+  };
+
+  const handleEditSubmit = async (form) => {
+    setEditError("");
+    setEditSaving(true);
+
+    try {
+      await updateStudent(editStudent._id, form);
+
+      setEditStudent(null);
+
+      await fetchStudents();
+    } catch (error) {
+      setEditError(
+        error.message || "Failed to update student"
+      );
+    } finally {
+      setEditSaving(false);
+    }
+  };
+
+  const openDeleteModal = (student) => {
+    setDeleteError("");
+    setDeleteTarget(student);
+  };
+
+  const closeDeleteModal = () => {
+    if (!deleteSaving) {
+      setDeleteTarget(null);
+    }
+  };
+
+  const handleDeleteConfirm = async () => {
+    setDeleteError("");
+    setDeleteSaving(true);
+
+    try {
+      await deleteStudent(deleteTarget._id);
+
+      setDeleteTarget(null);
+
+      if (students.length === 1 && page > 1) {
+        setPage(page - 1);
+      } else {
+        await fetchStudents();
+      }
+    } catch (error) {
+      setDeleteError(
+        error.message || "Failed to delete student"
+      );
+    } finally {
+      setDeleteSaving(false);
+    }
   };
 
 
@@ -249,6 +443,7 @@ function Students() {
         <button
           type="button"
           className="btn btn-primary"
+          onClick={openAddModal}
         >
 
           <i className="bi bi-plus-lg me-2"></i>
@@ -282,36 +477,78 @@ function Students() {
 
               {/* Search */}
 
-              <div
-                className="
-                  col-12
-                  col-md-7
-                "
-              >
+              <div className="col-12 col-md-7">
 
-                <div className="input-group">
+                <div className="position-relative">
 
-                  <span
-                    className="
-                      input-group-text
-                      bg-white
-                    "
-                  >
+                  <div className="input-group">
 
-                    <i className="bi bi-search"></i>
+                    <span className="input-group-text bg-white">
 
-                  </span>
+                      <i className="bi bi-search"></i>
+
+                    </span>
 
 
-                  <input
-                    type="text"
-                    className="form-control"
-                    placeholder="Search name or email..."
-                    value={search}
-                    onChange={(e) =>
-                      setSearch(e.target.value)
-                    }
-                  />
+                    <input
+                      type="text"
+                      className="form-control"
+                      placeholder="Search first name or email..."
+                      value={search}
+                      onChange={(e) =>
+                        setSearch(e.target.value)
+                      }
+                      onFocus={() => setSearchFocused(true)}
+                      onBlur={() => setSearchFocused(false)}
+                      onKeyDown={handleSearchKeyDown}
+                      autoComplete="off"
+                    />
+
+                    {search && (
+                      <button
+                        type="button"
+                        className="btn btn-outline-secondary"
+                        title="Clear search"
+                        onClick={handleClearSearch}
+                      >
+                        <i className="bi bi-x-lg"></i>
+                      </button>
+                    )}
+
+                  </div>
+
+
+                  {/* First-name suggestions */}
+                  {searchFocused &&
+                    search.trim() &&
+                    suggestions.length > 0 && (
+                      <div
+                        className="list-group position-absolute w-100 shadow-sm mt-1"
+                        style={{
+                          zIndex: 1050,
+                          maxHeight: "260px",
+                          overflowY: "auto",
+                        }}
+                      >
+                        {suggestions.map((name) => (
+                          <button
+                            key={name}
+                            type="button"
+                            className="list-group-item list-group-item-action d-flex align-items-center gap-2"
+                            onMouseDown={(e) => {
+                              e.preventDefault();
+                              handleSuggestionClick(name);
+                            }}
+                          >
+                            <i className="bi bi-person text-secondary"></i>
+
+                            <span className="fw-semibold">
+                              {name}
+                            </span>
+                          </button>
+                        ))}
+                      </div>
+                    )}
 
                 </div>
 
@@ -683,6 +920,9 @@ function Students() {
                                 btn-outline-primary
                               "
                               title="Edit"
+                              onClick={() =>
+                                openEditModal(student)
+                              }
                             >
 
                               <i
@@ -703,6 +943,9 @@ function Students() {
                                 btn-outline-danger
                               "
                               title="Delete"
+                              onClick={() =>
+                                openDeleteModal(student)
+                              }
                             >
 
                               <i
@@ -915,6 +1158,137 @@ function Students() {
         </div>
 
       </div>
+
+
+      {/* =================================================
+          ADD STUDENT MODAL
+      ================================================= */}
+
+      {addModalOpen && (
+        <StudentFormModal
+          title="Add Student"
+          icon="bi-person-plus"
+          saving={addSaving}
+          error={addError}
+          onSubmit={handleAddSubmit}
+          onClose={closeAddModal}
+          submitLabel="Save Student"
+        />
+      )}
+
+
+      {/* =================================================
+          EDIT STUDENT MODAL
+      ================================================= */}
+
+      {editStudent && (
+        <StudentFormModal
+          title="Edit Student"
+          icon="bi-pencil-square"
+          initialValues={editStudent}
+          saving={editSaving}
+          error={editError}
+          onSubmit={handleEditSubmit}
+          onClose={closeEditModal}
+          submitLabel="Update Student"
+        />
+      )}
+
+
+      {/* =================================================
+          DELETE CONFIRMATION MODAL
+      ================================================= */}
+
+      {deleteTarget && (
+        <>
+          <div
+            className="auth-modal-backdrop"
+            onClick={closeDeleteModal}
+          />
+
+          <div
+            className="auth-modal"
+            role="dialog"
+            aria-modal="true"
+          >
+            <div className="auth-modal-card">
+
+              <div className="auth-modal-header">
+
+                <h5 className="fw-bold mb-0">
+                  <i className="bi bi-trash me-2 text-danger"></i>
+                  Delete Student
+                </h5>
+
+                <button
+                  type="button"
+                  className="btn-close"
+                  aria-label="Close"
+                  onClick={closeDeleteModal}
+                  disabled={deleteSaving}
+                />
+
+              </div>
+
+              <div className="auth-modal-body">
+
+                {deleteError && (
+                  <div
+                    className="alert alert-danger py-2 small"
+                    role="alert"
+                  >
+                    <i className="bi bi-exclamation-triangle me-2"></i>
+                    {deleteError}
+                  </div>
+                )}
+
+                <p className="mb-1">
+                  Are you sure you want to delete this student?
+                </p>
+
+                <p className="fw-semibold mb-4">
+                  {deleteTarget.first_name} {deleteTarget.last_name}
+                  <span className="text-secondary fw-normal">
+                    {" "}({deleteTarget.email})
+                  </span>
+                </p>
+
+                <div className="d-flex gap-2">
+                  <button
+                    type="button"
+                    className="btn btn-light flex-fill"
+                    onClick={closeDeleteModal}
+                    disabled={deleteSaving}
+                  >
+                    Cancel
+                  </button>
+
+                  <button
+                    type="button"
+                    className="btn btn-danger flex-fill"
+                    onClick={handleDeleteConfirm}
+                    disabled={deleteSaving}
+                  >
+                    {deleteSaving ? (
+                      <>
+                        <span className="spinner-border spinner-border-sm me-2"></span>
+                        Deleting...
+                      </>
+                    ) : (
+                      <>
+                        <i className="bi bi-trash me-2"></i>
+                        Delete
+                      </>
+                    )}
+                  </button>
+                </div>
+
+              </div>
+
+            </div>
+          </div>
+        </>
+      )}
 
     </div>
   );
